@@ -1,15 +1,26 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import defaultCarouselItems from "../data/defaultCarouselItems";
 import styled, { keyframes } from "styled-components";
 import NextSvg from "../public/Next.svg";
 import PreviousSvg from "../public/Previous.svg";
 import {
-  carouselItemMover,
+  currentItemSizeSetter,
   itemArrayCentralizer,
+  prevNextInterval,
+  pointerMoveTranslatePropFunction,
+  translatePropOverflowFunction,
+  animationFinishedFunction,
 } from "../functions/carouselFunctions";
 import windowInfo from "./WindowInfo";
 import ItemSelector from "./ItemSelector";
-import { usePreviousState } from "./customHooks";
+import CarouselItemsComponent from "./carouselItemsComponent";
+//angleBase is the amount of rotation in degrees you need to make on the item selector circle to make one item move.
 const angleBase = 360 / defaultCarouselItems.length;
 const CarouselContainer = styled.div`
   width: ${(props) => props.widthProp};
@@ -17,21 +28,20 @@ const CarouselContainer = styled.div`
     width: 100%;
     height: 100%;
     padding: 7%;
-    padding-bottom: 3%;
   }
   @media (max-width: 1024px) {
     width: 70%;
     height: 80%;
   }
+
   width: 50%;
   height: 70%;
   box-sizing: border-box;
   position: absolute;
-  padding: 3%;
-  padding-bottom: 1%;
+  padding: 1%;
+
   left: 50%;
   transform: translateX(-50%);
-  border-radius: 5px;
   box-shadow: inset 0px 0px 8px gray;
   display: flex;
   flex-direction: column;
@@ -41,20 +51,30 @@ const CarouselContainer = styled.div`
 const CarouselItemsWrapper = styled.div`
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
-  display: flex;
   justify-content: center;
+  touch-action: none;
+  overflow: hidden;
 `;
+
 const CarouselItemsContainer = styled.div.attrs((props) => ({
-  style: { transform: `translateX(${props.translateProp}px)` },
+  style: {
+    transform: `translateX(${props.translateBaseProp + props.translateProp}px)`,
+  },
 }))`
   width: 100%;
   height: 100%;
   box-sizing: border-box;
   display: flex;
   justify-content: center;
+  align-items: center;
+`;
+const CarouselSlidingOverlay = styled.div`
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  z-index: 10;
   cursor: pointer;
-  touch-action: none;
+  transform: ${(props) => `translateX(${props.translateBaseProp}px)`};
 `;
 const PreviousNext = styled.div`
   position: absolute;
@@ -66,82 +86,90 @@ const PreviousNext = styled.div`
   min-width: 40px;
   max-width: 70px;
   cursor: pointer;
-`;
-
-const ItemWrapper = styled.div`
-  @media (max-width: 768px) {
-    width: 100%;
-    padding: 1%;
-  }
-  width: calc(100% / 3);
-  flex-shrink: 0;
-  overflow: hidden;
-
-  display: inline-block;
-  box-sizing: border-box;
-  padding: 2%;
-`;
-const CarouselItem = styled.div`
-  width: 100%;
-  height: 100%;
-  border-radius: 5px;
-  background: cyan;
-  user-select: none;
+  z-index: 3;
 `;
 
 const Carousel = () => {
+  //mounted ref is used so some of the useEffect hooks dont run on the initial render.
   const mounted = useRef(false);
   const { windowWidth, windowHeight, isMobile } = windowInfo();
+  //Carousel items array is run through rearranger function that centralizes the first item.
   const [carouselItems, setCarouselItems] = useState(() =>
     itemArrayCentralizer(defaultCarouselItems)
   );
+  //Prev current next size props which make sure the current item is the biggest in size.
+  const [currentPrevNextItemSize, setCurrentItemSize] = useState({
+    prev: 1,
+    current: 1.3,
+    next: 1,
+  });
+  // 3 states of different animations.
   const [buttonSlideAnimationInProgress, setButtonSlideAnimationInProgress] =
     useState(false);
   const [pointerSlideAnimationInProgress, setPointerSlideAnimationInProgress] =
     useState(false);
   const [itemSelectorAnimationInProgress, setItemSelectorAnimationInProgress] =
     useState(false);
-  const [pointerDownXCoordinate, setpointerDownXCoordinate] = useState(null);
-
-  const [pointerMoveXCoordinate, setPointerMoveXCoordinate] = useState(null);
+  //pointer slide animation starting coordinate.
+  const [pointerDownXCoordinate, setPointerDownXCoordinate] = useState(null);
+  //current ball on the item selector circle.
   const [currentBall, setCurrentBall] = useState(0);
+
   const [translateProp, setTranslateProp] = useState(0);
-  const previousTranslateProp = usePreviousState(translateProp);
-  //Current pointer angle for the item selector circle
+
+  //Current pointer angle for the item selector circle.
   const [pointerAngle, setPointerAngle] = useState(0);
-  const [currentItemWidth, setCurrentItemWidth] = useState(null);
+  const [currentItemWidth, setCurrentItemWidth] = useState(0);
+  //carousel container translate value.
   const translatePropRef = useRef(0);
   const buttonSlideAnimationIntervalRef = useRef(null);
   const carouselItemsContainerRef = useRef(null);
-
+  //currentBall value for when the pointer slide animation is on.
+  const currentBallBase = useRef(0);
+  //current item size setter useEffect. currentItemWidth is not defined on the inital render.
   useEffect(() => {
-    const carouselItemsContainerRefCurrent = carouselItemsContainerRef.current;
+    if (currentItemWidth) {
+      setCurrentItemSize(
+        currentItemSizeSetter({ translateProp, currentItemWidth })
+      );
+    }
+    //when the translateProp changes prev current and next item sizes are set accordingly.
+  }, [translateProp]);
+  useEffect(() => {
+    // after pointer is down on the carousel container, pointerMoveFunction is set.
     const pointerMoveFunction = (event) => {
       event.preventDefault();
-      setPointerMoveXCoordinate(event.clientX);
 
-      setTranslateProp(event.clientX - pointerDownXCoordinate);
+      const newTranslateProp = event.clientX - pointerDownXCoordinate;
+
+      pointerMoveTranslatePropFunction({
+        newTranslateProp,
+        currentItemWidth,
+        setPointerDownXCoordinate,
+        setTranslateProp,
+        event,
+        setCarouselItems,
+        currentBallBase,
+        defaultCarouselItems,
+        setPointerAngle,
+        setCurrentBall,
+        angleBase,
+      });
     };
+    //pointer move event is only set when the buttonSlideAnimation is not in progress.
     if (pointerSlideAnimationInProgress && !buttonSlideAnimationInProgress) {
-      carouselItemsContainerRefCurrent.addEventListener(
+      carouselItemsContainerRef.current.addEventListener(
         "pointermove",
         pointerMoveFunction
       );
-    }
-
-    return () => {
-      if (pointerSlideAnimationInProgress) {
-        carouselItemsContainerRefCurrent.removeEventListener(
+      return () => {
+        carouselItemsContainerRef.current.removeEventListener(
           "pointermove",
           pointerMoveFunction
         );
-      }
-    };
-  }, [
-    pointerSlideAnimationInProgress,
-    pointerDownXCoordinate,
-    pointerSlideAnimationInProgress,
-  ]);
+      };
+    }
+  }, [pointerSlideAnimationInProgress, pointerDownXCoordinate]);
   //
 
   useEffect(() => {
@@ -151,13 +179,14 @@ const Carousel = () => {
       event.preventDefault();
       event.target.setPointerCapture(event.pointerId);
       setPointerSlideAnimationInProgress(true);
-      setpointerDownXCoordinate(event.clientX);
+      setPointerDownXCoordinate(event.clientX);
     };
     const pointerUpFunction = (event) => {
       event.preventDefault();
-      event.target.releasePointerCapture(event.pointerId);
+
       setPointerSlideAnimationInProgress(false);
-      setpointerDownXCoordinate(null);
+
+      setPointerDownXCoordinate(null);
     };
     carouselItemsContainerRefCurrent.addEventListener(
       "pointerdown",
@@ -180,7 +209,7 @@ const Carousel = () => {
     };
   }, []);
   const buttonPreviousNextFunction = ({ prev, next }) => {
-    //animation does not happen if any animation is already in progress
+    //button slide animation does not happen if any animation is already in progress
     if (
       buttonSlideAnimationInProgress ||
       pointerSlideAnimationInProgress ||
@@ -188,169 +217,65 @@ const Carousel = () => {
     ) {
       return;
     }
-    //depending on which button is clicked corresponding animation intervals are set.
-
-    if (prev) {
-      setButtonSlideAnimationInProgress(true);
-
-      const buttonPrevAnimationInterval = setInterval(() => {
-        if (translatePropRef.current < currentItemWidth) {
-          //intervals are incrementing and decrementing the animation translate prop value untill the value exceeds the width of one carousel item.
-          translatePropRef.current += 3;
-          setTranslateProp(translatePropRef.current);
-        } else {
-          //prop gets set to 0 again and the interval is cleared. at the same time carouselItemMover function is triggered in useEffect and items get rotated.
-          translatePropRef.current = 0;
-          setButtonSlideAnimationInProgress(false);
-          clearInterval(buttonSlideAnimationIntervalRef.current);
-        }
-      }, 5);
-      buttonSlideAnimationIntervalRef.current = buttonPrevAnimationInterval;
-    }
-    if (next) {
-      setButtonSlideAnimationInProgress(true);
-      const buttonNextAnimationInterval = setInterval(() => {
-        if (translatePropRef.current > -currentItemWidth) {
-          translatePropRef.current = translatePropRef.current - 3;
-          setTranslateProp(translatePropRef.current);
-        } else {
-          translatePropRef.current = 0;
-          setButtonSlideAnimationInProgress(false);
-          clearInterval(buttonSlideAnimationIntervalRef.current);
-        }
-      }, 5);
-      buttonSlideAnimationIntervalRef.current = buttonNextAnimationInterval;
-    }
+    setButtonSlideAnimationInProgress(true);
+    buttonSlideAnimationIntervalRef.current = prevNextInterval({
+      prev,
+      next,
+      angleBase,
+      buttonSlideAnimationIntervalRef,
+      currentItemWidth,
+      setButtonSlideAnimationInProgress,
+      setTranslateProp,
+      translatePropRef,
+      setPointerAngle,
+    });
+    return () => {
+      clearInterval(buttonSlideAnimationIntervalRef.current);
+    };
   };
 
-  // when the animations are finished carouselMover function is triggered to readjust the items
   useEffect(() => {
-    if (mounted.current && currentItemWidth) {
-      if (translateProp >= currentItemWidth) {
-        if (pointerSlideAnimationInProgress) {
-          setpointerDownXCoordinate(pointerMoveXCoordinate);
-        }
-        const howManyTimesGreater = Math.round(
-          translateProp / currentItemWidth
-        );
-
-        setTranslateProp(
-          (prevTranslateProp) =>
-            prevTranslateProp - currentItemWidth * howManyTimesGreater
-        );
-
-        setCarouselItems((prevCarouselItems) =>
-          carouselItemMover({
-            arr: prevCarouselItems,
-            moveLastToFirst: true,
-            howManyTimes: howManyTimesGreater,
-          })
-        );
-      }
-      if (translateProp <= -currentItemWidth) {
-        if (pointerSlideAnimationInProgress) {
-          setpointerDownXCoordinate(pointerMoveXCoordinate);
-        }
-
-        const howManyTimesLesser = Math.round(
-          -translateProp / currentItemWidth
-        );
-
-        setTranslateProp(
-          (prevTranslateProp) =>
-            prevTranslateProp + currentItemWidth * howManyTimesLesser
-        );
-
-        setCarouselItems((prevCarouselItems) =>
-          carouselItemMover({
-            arr: prevCarouselItems,
-            moveFirstToLast: true,
-            howManyTimes: howManyTimesLesser,
-          })
-        );
-      }
-      if (
-        !pointerSlideAnimationInProgress &&
-        !buttonSlideAnimationInProgress &&
-        !itemSelectorAnimationInProgress
-      ) {
-        if (translateProp >= currentItemWidth / 2) {
-          setCarouselItems((prevCarouselItems) => {
-            return carouselItemMover({
-              arr: prevCarouselItems,
-              moveLastToFirst: true,
-              howManyTimes: 1,
-            });
-          });
-        }
-        if (translateProp <= -currentItemWidth / 2) {
-          setCarouselItems((prevCarouselItems) => {
-            return carouselItemMover({
-              arr: prevCarouselItems,
-              moveFirstToLast: true,
-              howManyTimes: 1,
-            });
-          });
-        }
-        //Sets the pointerAngle on the current item's exact degree value instead of where the pointer was when the animation finished
-        setPointerAngle(currentBall * angleBase);
-        setTranslateProp(0);
-      }
+    if (
+      mounted.current &&
+      currentItemWidth &&
+      !pointerSlideAnimationInProgress
+    ) {
+      //during the button or item selector animation, when the translate prop overflows, corresponding function is triggered.
+      translatePropOverflowFunction({
+        currentBallBase,
+        currentItemWidth,
+        setCarouselItems,
+        setTranslateProp,
+        translateProp,
+        defaultCarouselItems,
+      });
+    }
+  }, [translateProp, pointerSlideAnimationInProgress]);
+  useEffect(() => {
+    if (
+      !pointerSlideAnimationInProgress &&
+      !buttonSlideAnimationInProgress &&
+      !itemSelectorAnimationInProgress
+    ) {
+      // when the animations are finished animationFinished function is triggered to readjust the items.
+      animationFinishedFunction({
+        translateProp,
+        currentItemWidth,
+        setCarouselItems,
+        currentBallBase,
+        defaultCarouselItems,
+        setPointerAngle,
+        setCurrentBall,
+        setTranslateProp,
+        angleBase,
+      });
     }
   }, [
-    translateProp,
     pointerSlideAnimationInProgress,
     buttonSlideAnimationInProgress,
     itemSelectorAnimationInProgress,
   ]);
 
-  useEffect(() => {
-    if (buttonSlideAnimationInProgress || pointerSlideAnimationInProgress) {
-      if (pointerAngle >= 360) {
-        setPointerAngle(pointerAngle - 360);
-      }
-      if (pointerAngle < 0) {
-        setPointerAngle(pointerAngle + 360);
-      }
-      const translatePropDifference = translateProp - previousTranslateProp;
-      const anglifier = (translatePropArg) => {
-        return (angleBase * translatePropArg) / currentItemWidth;
-      };
-
-      if (translatePropDifference <= -currentItemWidth) {
-        setPointerAngle(
-          (prevPointerAngle) =>
-            prevPointerAngle +
-            anglifier((currentItemWidth + translatePropDifference) * -1)
-        );
-      }
-      if (translatePropDifference >= currentItemWidth) {
-        setPointerAngle(
-          (prevPointerAngle) =>
-            prevPointerAngle +
-            anglifier(currentItemWidth - translatePropDifference)
-        );
-      }
-      if (
-        translatePropDifference > 0 &&
-        translatePropDifference < currentItemWidth
-      ) {
-        setPointerAngle(
-          (prevPointerAngle) =>
-            prevPointerAngle - anglifier(translatePropDifference)
-        );
-      }
-      if (
-        translatePropDifference < 0 &&
-        translatePropDifference > -currentItemWidth
-      ) {
-        setPointerAngle(
-          (prevPointerAngle) =>
-            prevPointerAngle - anglifier(translatePropDifference)
-        );
-      }
-    }
-  }, [translateProp]);
   //Current Item Width Setter
   const currentItemCallbackRef = useCallback(
     (el) => {
@@ -370,20 +295,23 @@ const Carousel = () => {
       </PreviousNext>
       <CarouselItemsWrapper>
         <CarouselItemsContainer
-          ref={carouselItemsContainerRef}
+          translateBaseProp={
+            carouselItems.length % 2 === 0 ? -currentItemWidth / 2 : 0
+          }
           translateProp={translateProp}
         >
-          {carouselItems.map((item, index) => {
-            const ref =
-              index === Math.ceil(carouselItems.length / 2)
-                ? currentItemCallbackRef
-                : null;
-            return (
-              <ItemWrapper ref={ref}>
-                <CarouselItem>{item.name}</CarouselItem>
-              </ItemWrapper>
-            );
-          })}
+          <CarouselSlidingOverlay
+            ref={carouselItemsContainerRef}
+            translateBaseProp={
+              carouselItems.length % 2 === 0 ? currentItemWidth / 2 : 0
+            }
+          ></CarouselSlidingOverlay>
+          <CarouselItemsComponent
+            currentPrevNextItemSize={currentPrevNextItemSize}
+            isMobile={isMobile}
+            carouselItems={carouselItems}
+            currentItemCallbackRef={currentItemCallbackRef}
+          ></CarouselItemsComponent>
         </CarouselItemsContainer>
       </CarouselItemsWrapper>
       <PreviousNext
@@ -406,6 +334,7 @@ const Carousel = () => {
         setCurrentBall={setCurrentBall}
         pointerAngle={pointerAngle}
         setPointerAngle={setPointerAngle}
+        currentBallBase={currentBallBase}
       ></ItemSelector>
     </CarouselContainer>
   );

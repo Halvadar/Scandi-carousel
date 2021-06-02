@@ -19,11 +19,11 @@
     "styled-components": "^5.3.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.16",
     "@babel/core": "^7.14.2",
     "@babel/preset-env": "^7.14.2",
     "@babel/preset-react": "^7.13.13",
     "@svgr/webpack": "^5.5.0",
+    "babel-cli": "^6.26.0",
     "babel-loader": "^8.2.2",
     "babel-plugin-styled-components": "^1.12.0",
     "gh-pages": "^3.2.0",

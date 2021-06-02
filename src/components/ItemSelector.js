@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import defaultCarouselItems from "../data/defaultCarouselItems";
+import { itemSelectorAnimationFunction } from "../functions/carouselFunctions";
 const angleBase = 360 / defaultCarouselItems.length;
 
 const ItemSelectorContainer = styled.div`
@@ -54,6 +55,7 @@ const ItemSelector = ({
   setCurrentBall,
   pointerAngle,
   setPointerAngle,
+  currentBallBase,
 }) => {
   //mounted ref is used so some of the useEffect hooks dont run on the initial render.
   const mounted = useRef(false);
@@ -88,7 +90,6 @@ const ItemSelector = ({
     const itemSelectorPointerDownFunction = (event) => {
       event.preventDefault();
       event.target.setPointerCapture(event.pointerId);
-
       //y coordinate is calculated backwards, because we want the y coordinate to increase from the bottom up. This way both the y and x coordinates are positive in the upper right corner of the circle and the rotation angle increases clockwise around it.
       setPointerMoveCoordinates(() => {
         return {
@@ -159,39 +160,18 @@ const ItemSelector = ({
   }, [itemSelectorAnimationInProgress, centerPointCoordinates]);
   useEffect(() => {
     if (itemSelectorAnimationInProgress) {
-      const newPointerAngle =
-        (Math.atan2(pointerMoveCoordinates.x, pointerMoveCoordinates.y) * 180) /
-        Math.PI;
-
-      const positivizedNewPointerAngle =
-        newPointerAngle < 0 ? newPointerAngle + 360 : newPointerAngle;
-      setPointerAngle(positivizedNewPointerAngle);
-
-      const pointerAngleDifference = positivizedNewPointerAngle - pointerAngle;
-
-      const pointerAngleDifferenceCorrected =
-        pointerAngleDifference < -180 || pointerAngleDifference > 180
-          ? pointerAngleDifference < -180
-            ? pointerAngleDifference + 360
-            : pointerAngleDifference - 360
-          : pointerAngleDifference;
-
-      setTranslateProp((prevTranslateProp) => {
-        return (
-          prevTranslateProp +
-          ((pointerAngleDifferenceCorrected * currentItemWidth) / angleBase) *
-            -1
-        );
+      itemSelectorAnimationFunction({
+        pointerMoveCoordinates,
+        setPointerAngle,
+        setTranslateProp,
+        currentItemWidth,
+        angleBase,
+        setCurrentBall,
+        defaultCarouselItems,
+        pointerAngle,
       });
     }
   }, [pointerMoveCoordinates, itemSelectorAnimationInProgress]);
-  useEffect(() => {
-    setCurrentBall(() => {
-      const currentBall = Math.round(pointerAngle / angleBase);
-
-      return currentBall > defaultCarouselItems.length - 1 ? 0 : currentBall;
-    });
-  }, [pointerAngle]);
 
   const balls = useMemo(
     () =>
