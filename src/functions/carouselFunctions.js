@@ -37,22 +37,27 @@ export const currentBallBaseUpdater = ({
     ? prevCurrentBallBase + howManyTimes
     : prevCurrentBallBase - howManyTimes;
   //if the new ball base is above carousel items length ot below 0 it gets readjusted so the pointerAngle value is allways withing 0-360 degrees.
-  return newValue >= itemsLength
-    ? newValue - itemsLength
-    : newValue < 0
-    ? newValue + itemsLength
-    : newValue;
+  if (newValue >= itemsLength) {
+    return newValue - itemsLength;
+  }
+  if (newValue < 0) {
+    return newValue + itemsLength;
+  }
+  return newValue;
 };
 
 export const currentBallSetter = ({ pointerAngle, angleBase, itemsLength }) => {
-  const newPointerAngle =
-    pointerAngle < 0
-      ? pointerAngle + 360
-      : pointerAngle > 360
-      ? pointerAngle - 360
-      : pointerAngle;
+  const newPointerAngle = () => {
+    if (pointerAngle < 0) {
+      return pointerAngle + 360;
+    }
+    if (pointerAngle > 360) {
+      return pointerAngle - 360;
+    }
+    return pointerAngle;
+  };
 
-  const currentBall = Math.round(newPointerAngle / angleBase);
+  const currentBall = Math.round(newPointerAngle() / angleBase);
   //pointer angle can be the same as itemsLength which is the same as 0. So in that case it gets reasigned 0.
   return currentBall > itemsLength - 1 ? 0 : currentBall;
 };
@@ -323,17 +328,20 @@ export const itemSelectorAnimationFunction = ({
 
   const pointerAngleDifference = positivizedNewPointerAngle - pointerAngle;
   //if the pointerAngle difference is above 180 or below -180, for example if we jump from the first to last item, it would be ineffiecient to rotate the carousel in a clockwise direction, therefore difference is corrected so the rotation takes the shortest route.
-  const pointerAngleDifferenceCorrected =
-    pointerAngleDifference < -180 || pointerAngleDifference > 180
-      ? pointerAngleDifference < -180
-        ? pointerAngleDifference + 360
-        : pointerAngleDifference - 360
-      : pointerAngleDifference;
+  const pointerAngleDifferenceCorrected = () => {
+    if (pointerAngleDifference < -180) {
+      return pointerAngleDifference + 360;
+    }
+    if (pointerAngleDifference > 180) {
+      return pointerAngleDifference - 360;
+    }
+    return pointerAngleDifference;
+  };
 
   setTranslateProp((prevTranslateProp) => {
     return (
       prevTranslateProp +
-      ((pointerAngleDifferenceCorrected * currentItemWidth) / angleBase) * -1
+      ((pointerAngleDifferenceCorrected() * currentItemWidth) / angleBase) * -1
     );
   });
   setCurrentBall(

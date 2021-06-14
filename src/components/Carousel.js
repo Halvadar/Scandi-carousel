@@ -5,10 +5,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import defaultCarouselItems from "../data/defaultCarouselItems";
+import { defaultCarouselItems } from "../data/defaultCarouselItems";
 import styled, { keyframes } from "styled-components";
-import NextSvg from "../public/Next.svg";
-import PreviousSvg from "../public/Previous.svg";
+import PreviousNextSvg from "../public/PreviousNext.svg";
 import {
   currentItemSizeSetter,
   itemArrayCentralizer,
@@ -20,6 +19,7 @@ import {
 import windowInfo from "./WindowInfo";
 import ItemSelector from "./ItemSelector";
 import CarouselItemsComponent from "./carouselItemsComponent";
+
 //angleBase is the amount of rotation in degrees you need to make on the item selector circle to make one item move.
 const angleBase = 360 / defaultCarouselItems.length;
 const CarouselContainer = styled.div`
@@ -48,40 +48,16 @@ const CarouselContainer = styled.div`
   justify-content: center;
   align-items: center;
 `;
-const CarouselItemsWrapper = styled.div`
-  width: 100%;
-  height: 100%;
-  justify-content: center;
-  touch-action: none;
-  overflow: hidden;
-`;
 
-const CarouselItemsContainer = styled.div.attrs((props) => ({
-  style: {
-    transform: `translateX(${props.translateBaseProp + props.translateProp}px)`,
-  },
-}))`
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-const CarouselSlidingOverlay = styled.div`
-  height: 100%;
-  width: 100%;
-  position: absolute;
-  z-index: 10;
-  cursor: pointer;
-  transform: ${(props) => `translateX(${props.translateBaseProp}px)`};
-`;
 const PreviousNext = styled.div`
   position: absolute;
   top: 50%;
   left: ${(props) => props.left && 0};
   right: ${(props) => props.right && 0};
-  transform: ${(props) => `translate(${props.left ? "-" : ""}50%,-50%)`};
+  transform: ${(props) =>
+    `translate(${props.left ? "-" : ""}50%,-50%) rotate(${
+      props.left ? "180deg" : "0deg"
+    })`};
   width: 5%;
   min-width: 40px;
   max-width: 70px;
@@ -291,34 +267,38 @@ const Carousel = () => {
         left
         onClick={() => buttonPreviousNextFunction({ prev: true })}
       >
-        <PreviousSvg />
+        <PreviousNextSvg />
       </PreviousNext>
-      <CarouselItemsWrapper>
-        <CarouselItemsContainer
-          translateBaseProp={
-            carouselItems.length % 2 === 0 ? -currentItemWidth / 2 : 0
-          }
-          translateProp={translateProp}
-        >
-          <CarouselSlidingOverlay
-            ref={carouselItemsContainerRef}
-            translateBaseProp={
-              carouselItems.length % 2 === 0 ? currentItemWidth / 2 : 0
-            }
-          ></CarouselSlidingOverlay>
-          <CarouselItemsComponent
-            currentPrevNextItemSize={currentPrevNextItemSize}
-            isMobile={isMobile}
-            carouselItems={carouselItems}
-            currentItemCallbackRef={currentItemCallbackRef}
-          ></CarouselItemsComponent>
-        </CarouselItemsContainer>
-      </CarouselItemsWrapper>
+      <CarouselItemsComponent
+        carouselItems={carouselItems}
+        ref={carouselItemsContainerRef}
+        currentItemCallbackRef={currentItemCallbackRef}
+        currentItemWidth={currentItemWidth}
+        currentPrevNextItemSize={currentPrevNextItemSize}
+        isMobile={isMobile}
+        translateProp={translateProp}
+      >
+        {carouselItems.map((item, index) => {
+          const { Item, id } = item;
+
+          return (
+            <Item
+              key={id}
+              index={index}
+              carouselItemsLength={carouselItems.length}
+              currentPrevNextItemSize={currentPrevNextItemSize}
+              isMobile={isMobile}
+              currentItemCallbackRef={currentItemCallbackRef}
+            />
+          );
+        })}
+      </CarouselItemsComponent>
+
       <PreviousNext
         right
         onClick={() => buttonPreviousNextFunction({ next: true })}
       >
-        <NextSvg />
+        <PreviousNextSvg />
       </PreviousNext>
       <ItemSelector
         setItemSelectorAnimationInProgress={setItemSelectorAnimationInProgress}
@@ -335,7 +315,7 @@ const Carousel = () => {
         pointerAngle={pointerAngle}
         setPointerAngle={setPointerAngle}
         currentBallBase={currentBallBase}
-      ></ItemSelector>
+      />
     </CarouselContainer>
   );
 };

@@ -1,73 +1,56 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import styled from "styled-components";
-const ItemWrapper = styled.div.attrs((props) => ({
-  style: {
-    transform: !props.isMobile ? `scale(${props.scaleProp})` : null,
-    height: !props.isMobile ? "70%" : "100%",
-    zIndex: props.scaleProp >= 1.15 ? 2 : 1,
-  },
-}))`
-  @media (max-width: 768px) {
-    width: 100%;
-    padding: 1%;
-  }
-  backface-visibility: hidden;
-  width: calc(100% / 3);
-  flex-shrink: 0;
-  display: inline-block;
-  box-sizing: border-box;
-  padding: 2%;
-`;
-const CarouselItem = styled.div`
+
+const CarouselItemsWrapper = styled.div`
   width: 100%;
   height: 100%;
+  justify-content: center;
+  touch-action: none;
   overflow: hidden;
-  background: white;
-  user-select: none;
-  box-shadow: ${(props) => (!props.isMobile ? "10px 10px 5px #aaaaaa" : null)};
+`;
+
+const CarouselItemsContainer = styled.div.attrs((props) => ({
+  style: {
+    transform: `translateX(${props.translateBaseProp + props.translateProp}px)`,
+  },
+}))`
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 3px;
+`;
+const CarouselSlidingOverlay = styled.div`
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  z-index: 10;
+  cursor: pointer;
+  transform: ${(props) => `translateX(${props.translateBaseProp}px)`};
 `;
 
-const CarouselItemsComponent = ({
-  currentPrevNextItemSize,
-  isMobile,
-  carouselItems,
-  currentItemCallbackRef,
-}) => {
-  return (
-    <>
-      {carouselItems.map((item, index) => {
-        const currentItem = index === Math.floor(carouselItems.length / 2);
-        const nextItem = index === Math.floor(carouselItems.length / 2) + 1;
-        const prevItem = index === Math.floor(carouselItems.length / 2) - 1;
-        const ref = currentItem ? currentItemCallbackRef : null;
-        const Component = item.component;
-        return (
-          <ItemWrapper
-            isMobile={isMobile}
-            scaleProp={
-              currentItem
-                ? currentPrevNextItemSize.current
-                : nextItem
-                ? currentPrevNextItemSize.next
-                : prevItem
-                ? currentPrevNextItemSize.prev
-                : 1
-            }
-            key={item.id}
+const CarouselItemsComponent = forwardRef(
+  ({ carouselItems, currentItemWidth, translateProp, children }, ref) => {
+    return (
+      <CarouselItemsWrapper>
+        <CarouselItemsContainer
+          translateBaseProp={
+            carouselItems.length % 2 === 0 ? -currentItemWidth / 2 : 0
+          }
+          translateProp={translateProp}
+        >
+          <CarouselSlidingOverlay
             ref={ref}
-          >
-            <CarouselItem isMobile={isMobile}>
-              <Component canPlay={item.type === "video" ? currentItem : null} />
-            </CarouselItem>
-          </ItemWrapper>
-        );
-      })}
-    </>
-  );
-};
+            translateBaseProp={
+              carouselItems.length % 2 === 0 ? currentItemWidth / 2 : 0
+            }
+          />
+          {children}
+        </CarouselItemsContainer>
+      </CarouselItemsWrapper>
+    );
+  }
+);
 
 export default CarouselItemsComponent;

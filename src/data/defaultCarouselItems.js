@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-
+import styled from "styled-components";
 const FirstItem = ({ canPlay }) => {
   const videoRef = useRef();
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -37,7 +37,7 @@ const FirstItem = ({ canPlay }) => {
       >
         <source
           src={"https://www.rmp-streaming.com/media/big-buck-bunny-360p.mp4"}
-        ></source>
+        />
       </video>
       <img
         style={{ display: videoLoaded ? "none" : null }}
@@ -58,7 +58,7 @@ const SecondItem = () => (
     src={
       "https://assets-global.website-files.com/6005fac27a49a9cd477afb63/60576840e7d265198541a372_bavassano_homepage_gp.jpg"
     }
-  ></img>
+  />
 );
 const ThirdItem = () => (
   <div
@@ -93,7 +93,7 @@ const FourthItem = () => (
           width: "100%",
           objectPosition: "center",
         }}
-      ></img>
+      />
     </div>
     <div
       style={{
@@ -131,7 +131,7 @@ const FifthItem = () => {
           src={
             "https://www.pixsy.com/wp-content/uploads/2021/04/ben-sweet-2LowviVHZ-E-unsplash-1.jpeg"
           }
-        ></img>
+        />
       </div>
 
       <h1>Luigi</h1>
@@ -142,7 +142,7 @@ const FifthItem = () => {
           borderRadius: "50%",
           background: "black",
         }}
-      ></div>
+      />
       <h2>Mazeratti</h2>
     </div>
   );
@@ -156,7 +156,7 @@ const SixthItem = () => (
       objectPosition: "center",
     }}
     src={"https://scx2.b-cdn.net/gfx/news/hires/2019/galaxy.jpg"}
-  ></img>
+  />
 );
 const SeventhItem = () => (
   <div
@@ -177,7 +177,7 @@ const SeventhItem = () => (
           width: "100%",
           objectPosition: "center",
         }}
-      ></img>
+      />
     </div>
     <div
       style={{
@@ -210,7 +210,7 @@ const EighthItem = () => (
         width: "100%",
         objectPosition: "center",
       }}
-    ></img>
+    />
     <h1 style={{ marginBottom: "10%", color: "black" }}>Psum Lorium</h1>
     <div
       style={{
@@ -220,7 +220,7 @@ const EighthItem = () => (
         background: "black",
         marginBottom: "10%",
       }}
-    ></div>
+    />
     <p style={{ textAlign: "center" }}>
       Wild cherry pepsi as if magic johnson trl scrunched socks.
     </p>
@@ -275,7 +275,37 @@ const NinthItem = ({ canPlay }) => {
     </>
   );
 };
-const data = [
+const ItemWrapper = styled.div.attrs((props) => ({
+  style: {
+    transform: !props.isMobile ? `scale(${props.scaleProp})` : null,
+    height: !props.isMobile ? "70%" : "100%",
+    zIndex: props.scaleProp >= 1.15 ? 2 : 1,
+  },
+}))`
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 1%;
+  }
+  backface-visibility: hidden;
+  width: calc(100% / 3);
+  flex-shrink: 0;
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 2%;
+`;
+const CarouselItem = styled.div`
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: white;
+  user-select: none;
+  box-shadow: ${(props) => (!props.isMobile ? "10px 10px 5px #aaaaaa" : null)};
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 3px;
+`;
+export const defaultCarouselItems = [
   { component: FirstItem, type: "video", id: 0 },
   { component: SecondItem, type: "image", id: 1 },
   { component: ThirdItem, type: "p", id: 2 },
@@ -285,5 +315,46 @@ const data = [
   { component: SeventhItem, type: "mixed image", id: 6 },
   { component: EighthItem, type: "mixed image", id: 7 },
   { component: NinthItem, type: "video", id: 8 },
-];
-export default data;
+].map((item) => {
+  const Component = item.component;
+  const type = item.type;
+  return {
+    Item: ({
+      isMobile,
+      currentItemCallbackRef,
+      currentPrevNextItemSize,
+      carouselItemsLength,
+      index,
+    }) => {
+      const currentItem = index === Math.floor(carouselItemsLength / 2);
+      const nextItem = index === Math.floor(carouselItemsLength / 2) + 1;
+      const prevItem = index === Math.floor(carouselItemsLength / 2) - 1;
+      const ref = currentItem ? currentItemCallbackRef : null;
+      const scaleProp = () => {
+        if (currentItem) {
+          return currentPrevNextItemSize.current;
+        }
+        if (nextItem) {
+          return currentPrevNextItemSize.next;
+        }
+        if (prevItem) {
+          return currentPrevNextItemSize.prev;
+        }
+        return 1;
+      };
+      return (
+        <ItemWrapper
+          isMobile={isMobile}
+          scaleProp={scaleProp()}
+          key={item.id}
+          ref={ref}
+        >
+          <CarouselItem isMobile={isMobile}>
+            <Component canPlay={type === "video" ? currentItem : null} />
+          </CarouselItem>
+        </ItemWrapper>
+      );
+    },
+    id: item.id,
+  };
+});

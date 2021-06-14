@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import styled from "styled-components";
-import defaultCarouselItems from "../data/defaultCarouselItems";
+import { defaultCarouselItems } from "../data/defaultCarouselItems";
 import { itemSelectorAnimationFunction } from "../functions/carouselFunctions";
 const angleBase = 360 / defaultCarouselItems.length;
 
