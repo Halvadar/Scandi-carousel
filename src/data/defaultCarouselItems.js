@@ -1,5 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
+const StyledVideo = styled.video`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: ${(props) => (!props.videoLoaded ? "none" : null)};
+`;
+
+const StyledImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: ${(props) => (props.videoLoaded ? "none" : null)};
+`;
+
 const FirstItem = ({ canPlay }) => {
   const videoRef = useRef();
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -17,6 +32,7 @@ const FirstItem = ({ canPlay }) => {
     const canPlayFunction = () => {
       setVideoLoaded(true);
     };
+
     videoRef.current.addEventListener("canplay", canPlayFunction);
     return () => {
       videoRef.removeEventListener("canplay", canPlayFunction);
@@ -24,23 +40,13 @@ const FirstItem = ({ canPlay }) => {
   }, []);
   return (
     <>
-      <video
-        ref={videoRef}
-        muted
-        loop
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: !videoLoaded ? "none" : null,
-        }}
-      >
+      <StyledVideo ref={videoRef} muted loop videoLoaded={videoLoaded}>
         <source
           src={"https://www.rmp-streaming.com/media/big-buck-bunny-360p.mp4"}
         />
-      </video>
-      <img
-        style={{ display: videoLoaded ? "none" : null }}
+      </StyledVideo>
+      <StyledImage
+        videoLoaded={videoLoaded}
         src={"https://media1.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif"}
       />
     </>
@@ -48,183 +54,146 @@ const FirstItem = ({ canPlay }) => {
 };
 
 const SecondItem = () => (
-  <img
-    style={{
-      objectFit: "cover",
-      height: "100%",
-      width: "100%",
-      objectPosition: "center",
-    }}
+  <StyledImage
     src={
       "https://assets-global.website-files.com/6005fac27a49a9cd477afb63/60576840e7d265198541a372_bavassano_homepage_gp.jpg"
     }
   />
 );
+const StyledThirdItemContainer = styled.div`
+  padding: 5%;
+  font-size: 1rem;
+`;
+const StyledThirdItemHeadStyle = styled.h1`
+  margin-bottom: 10%;
+`;
 const ThirdItem = () => (
-  <div
-    style={{
-      padding: "5%",
-
-      fontSize: "1rem",
-    }}
-  >
-    <h1 style={{ marginBottom: "10%" }}>Lorem Ipsum</h1>
+  <StyledThirdItemContainer>
+    <StyledThirdItemHeadStyle>Lorem Ipsum</StyledThirdItemHeadStyle>
     <p>lorem ipsum</p>
     <p>ipsum lorem</p>
     <p>lorem lorem ipsum ipsum lalalalala</p>
-  </div>
+  </StyledThirdItemContainer>
 );
+const StyledFourthItemContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: 100%;
+  width: 100%;
+`;
+const StyledFourthItemTextContainer = styled.div`
+  border-top: 1px solid black;
+  text-align: center;
+`;
 const FourthItem = () => (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "stretch",
-      height: "100%",
-      width: "100%",
-    }}
-  >
+  <StyledFourthItemContainer>
     <div>
-      <img
+      <StyledImage
         src={"https://hatrabbits.com/wp-content/uploads/2017/01/random.jpg"}
-        style={{
-          objectFit: "cover",
-          height: "100%",
-          width: "100%",
-          objectPosition: "center",
-        }}
       />
     </div>
-    <div
-      style={{
-        borderTop: "1px solid black",
-        textAlign: "center",
-      }}
-    >
+    <StyledFourthItemTextContainer>
       <h1>Header</h1>
       <p>Hello,there</p>
       <p>This is me</p>
-    </div>
-  </div>
+    </StyledFourthItemTextContainer>
+  </StyledFourthItemContainer>
 );
+const FifthItemContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+const FifthItemImageContainer = styled.div`
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 5% 0%;
+`;
+const FifthItemBar = styled.div`
+  width: 70%;
+  height: 2px;
+  border-radius: 50%;
+  background: black;
+`;
 const FifthItem = () => {
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    >
-      <div
-        style={{
-          width: "100px",
-          height: "100px",
-          borderRadius: "50%",
-          overflow: "hidden",
-          margin: "5% 0%",
-        }}
-      >
-        <img
-          style={{
-            objectFit: "cover",
-            height: "100%",
-            width: "100%",
-            objectPosition: "center",
-          }}
+    <FifthItemContainer>
+      <FifthItemImageContainer>
+        <StyledImage
           src={
             "https://www.pixsy.com/wp-content/uploads/2021/04/ben-sweet-2LowviVHZ-E-unsplash-1.jpeg"
           }
         />
-      </div>
+      </FifthItemImageContainer>
 
       <h1>Luigi</h1>
-      <div
-        style={{
-          width: "70%",
-          height: "2px",
-          borderRadius: "50%",
-          background: "black",
-        }}
-      />
+      <FifthItemBar />
       <h2>Mazeratti</h2>
-    </div>
+    </FifthItemContainer>
   );
 };
-const SixthItem = () => (
-  <img
-    style={{
-      objectFit: "cover",
-      height: "100%",
-      width: "100%",
-      objectPosition: "center",
-    }}
-    src={"https://scx2.b-cdn.net/gfx/news/hires/2019/galaxy.jpg"}
-  />
-);
-const SeventhItem = () => (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "stretch",
-      height: "100%",
-      width: "100%",
-    }}
-  >
-    <div>
-      <img
-        src={"http://i.imgur.com/HBaRG1I.png"}
-        style={{
-          objectFit: "cover",
-          height: "100%",
-          width: "100%",
-          objectPosition: "center",
-        }}
-      />
-    </div>
-    <div
-      style={{
-        borderTop: "1px solid black",
-        textAlign: "center",
-      }}
-    >
-      <h1>Header</h1>
-    </div>
-  </div>
-);
-const EighthItem = () => (
-  <div
-    style={{
-      padding: "5%",
 
-      fontSize: "0.8rem",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    }}
-  >
-    <img
+const SixthItem = () => (
+  <StyledImage src={"https://scx2.b-cdn.net/gfx/news/hires/2019/galaxy.jpg"} />
+);
+const SeventhItemContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: 100%;
+  width: 100%;
+`;
+const SeventhItemHeaderContainer = styled.div`
+  border-top: 1px solid black;
+  text-align: center;
+`;
+const SeventhItem = () => (
+  <SeventhItemContainer>
+    <div>
+      <StyledImage src={"http://i.imgur.com/HBaRG1I.png"} />
+    </div>
+    <SeventhItemHeaderContainer>
+      <h1>Header</h1>
+    </SeventhItemHeaderContainer>
+  </SeventhItemContainer>
+);
+const EigthItemContainer = styled.div`
+  padding: 5%;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+const EigthItemHead = styled.h1`
+  margin-bottom: 10%;
+  color: black;
+`;
+const EigthItemBar = styled.div`
+  width: 90%;
+  height: 2px;
+  border-radius: 50%;
+  background: black;
+  margin-bottom: 10%;
+`;
+const EigthItemParagraph = styled.p`
+  text-align: center;
+`;
+const EighthItem = () => (
+  <EigthItemContainer>
+    <StyledImage
       src={
         "https://upload.wikimedia.org/wikipedia/commons/9/9a/Gull_portrait_ca_usa.jpg"
       }
-      style={{
-        objectFit: "cover",
-        height: "100%",
-        width: "100%",
-        objectPosition: "center",
-      }}
     />
-    <h1 style={{ marginBottom: "10%", color: "black" }}>Psum Lorium</h1>
-    <div
-      style={{
-        width: "90%",
-        height: "2px",
-        borderRadius: "50%",
-        background: "black",
-        marginBottom: "10%",
-      }}
-    />
-    <p style={{ textAlign: "center" }}>
+    <EigthItemHead>Psum Lorium</EigthItemHead>
+    <EigthItemBar />
+    <EigthItemParagraph>
       Wild cherry pepsi as if magic johnson trl scrunched socks.
-    </p>
-  </div>
+    </EigthItemParagraph>
+  </EigthItemContainer>
 );
 
 const NinthItem = ({ canPlay }) => {
@@ -251,25 +220,15 @@ const NinthItem = ({ canPlay }) => {
   }, []);
   return (
     <>
-      <video
-        ref={videoRef}
-        muted
-        loop
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: !videoLoaded ? "none" : null,
-        }}
-      >
+      <StyledVideo ref={videoRef} muted loop videoLoaded={videoLoaded}>
         <source
           src={"https://samplelib.com/lib/download/mp4/sample-5s.mp4"}
           type="video/mp4"
         />
-      </video>
+      </StyledVideo>
 
-      <img
-        style={{ display: videoLoaded ? "none" : null }}
+      <StyledImage
+        videoLoaded={videoLoaded}
         src={"https://media1.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif"}
       />
     </>

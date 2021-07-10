@@ -1,10 +1,4 @@
-export const carouselItemMover = ({
-  arr,
-  moveLastToFirst,
-  moveFirstToLast,
-  howManyTimes,
-  currentBallRef,
-}) => {
+export const carouselItemMover = ({ arr, moveLastToFirst, howManyTimes }) => {
   if (moveLastToFirst) {
     //based on how many times the translate prop has overflown 1 item width, new carouselItems array is formed by splitting the old array in 2 and remerging them.
     return [
@@ -78,7 +72,6 @@ export const currentItemSizeSetter = ({ translateProp, currentItemWidth }) => {
 
 export const prevNextInterval = ({
   prev,
-  next,
   translatePropRef,
   currentItemWidth,
   angleBase,
@@ -133,7 +126,7 @@ export const pointerMoveTranslatePropFunction = ({
   setPointerDownXCoordinate,
   setTranslateProp,
   event,
-  setCarouselItems,
+  setCarouselItemsCentralized,
   currentBallBase,
   defaultCarouselItems,
   setPointerAngle,
@@ -151,7 +144,7 @@ export const pointerMoveTranslatePropFunction = ({
       setTranslateProp(event.clientX - newPointerDownXCoordinate);
       return newPointerDownXCoordinate;
     });
-    setCarouselItems((prevCarouselItems) => {
+    setCarouselItemsCentralized((prevCarouselItems) => {
       return carouselItemMover({
         arr: prevCarouselItems,
         moveLastToFirst: true,
@@ -175,7 +168,7 @@ export const pointerMoveTranslatePropFunction = ({
       return newPointerDownXCoordinate;
     });
 
-    setCarouselItems((prevCarouselItems) =>
+    setCarouselItemsCentralized((prevCarouselItems) =>
       carouselItemMover({
         arr: prevCarouselItems,
         moveFirstToLast: true,
@@ -212,7 +205,7 @@ export const translatePropOverflowFunction = ({
   currentItemWidth,
   setTranslateProp,
   currentBallBase,
-  setCarouselItems,
+  setCarouselItemsCentralized,
   defaultCarouselItems,
 }) => {
   if (translateProp >= currentItemWidth) {
@@ -227,7 +220,7 @@ export const translatePropOverflowFunction = ({
       itemsLength: defaultCarouselItems.length,
       howManyTimes: howManyTimes,
     });
-    setCarouselItems((prevCarouselItems) => {
+    setCarouselItemsCentralized((prevCarouselItems) => {
       return carouselItemMover({
         arr: prevCarouselItems,
         moveLastToFirst: true,
@@ -248,7 +241,7 @@ export const translatePropOverflowFunction = ({
       (prevTranslateProp) => prevTranslateProp + currentItemWidth * howManyTimes
     );
 
-    setCarouselItems((prevCarouselItems) =>
+    setCarouselItemsCentralized((prevCarouselItems) =>
       carouselItemMover({
         arr: prevCarouselItems,
         moveFirstToLast: true,
@@ -260,7 +253,7 @@ export const translatePropOverflowFunction = ({
 export const animationFinishedFunction = ({
   translateProp,
   currentItemWidth,
-  setCarouselItems,
+  setCarouselItemsCentralized,
   currentBallBase,
   defaultCarouselItems,
   setPointerAngle,
@@ -270,7 +263,7 @@ export const animationFinishedFunction = ({
 }) => {
   //when the user releases the pointer, translateProp for the carousel can be in the middle of 2 items, so this function is run to determine which item needs to be selected.
   if (translateProp >= currentItemWidth / 2) {
-    setCarouselItems((prevCarouselItems) => {
+    setCarouselItemsCentralized((prevCarouselItems) => {
       return carouselItemMover({
         arr: prevCarouselItems,
         moveLastToFirst: true,
@@ -285,7 +278,7 @@ export const animationFinishedFunction = ({
     });
   }
   if (translateProp <= -currentItemWidth / 2) {
-    setCarouselItems((prevCarouselItems) => {
+    setCarouselItemsCentralized((prevCarouselItems) => {
       return carouselItemMover({
         arr: prevCarouselItems,
         moveFirstToLast: true,

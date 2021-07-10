@@ -1,12 +1,6 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import styled from "styled-components";
 import { defaultCarouselItems } from "../data/defaultCarouselItems";
-import styled, { keyframes } from "styled-components";
 import PreviousNextSvg from "../public/PreviousNext.svg";
 import {
   currentItemSizeSetter,
@@ -18,9 +12,9 @@ import {
 } from "../functions/carouselFunctions";
 import windowInfo from "./WindowInfo";
 import ItemSelector from "./ItemSelector";
-import CarouselItemsComponent from "./carouselItemsComponent";
+import CarouselItemsComponent from "./CarouselItemsComponent";
 
-//angleBase is the amount of rotation in degrees you need to make on the item selector circle to make one item move.
+// angleBase is the amount of rotation in degrees you need to make on the item selector circle to make one item move.
 const angleBase = 360 / defaultCarouselItems.length;
 const CarouselContainer = styled.div`
   width: ${(props) => props.widthProp};
@@ -65,15 +59,15 @@ const PreviousNext = styled.div`
   z-index: 3;
 `;
 
-const Carousel = () => {
-  //mounted ref is used so some of the useEffect hooks dont run on the initial render.
+const Carousel = ({ carouselItems }) => {
+  // mounted ref is used so some of the useEffect hooks dont run on the initial render.
   const mounted = useRef(false);
   const { windowWidth, windowHeight, isMobile } = windowInfo();
-  //Carousel items array is run through rearranger function that centralizes the first item.
-  const [carouselItems, setCarouselItems] = useState(() =>
-    itemArrayCentralizer(defaultCarouselItems)
+  // Carousel items array is run through rearranger function that centralizes the first item.
+  const [carouselItemsCentralized, setCarouselItemsCentralized] = useState(() =>
+    itemArrayCentralizer(carouselItems)
   );
-  //Prev current next size props which make sure the current item is the biggest in size.
+  // Prev current next size props which make sure the current item is the biggest in size.
   const [currentPrevNextItemSize, setCurrentItemSize] = useState({
     prev: 1,
     current: 1.3,
@@ -86,31 +80,31 @@ const Carousel = () => {
     useState(false);
   const [itemSelectorAnimationInProgress, setItemSelectorAnimationInProgress] =
     useState(false);
-  //pointer slide animation starting coordinate.
+  // pointer slide animation starting coordinate.
   const [pointerDownXCoordinate, setPointerDownXCoordinate] = useState(null);
-  //current ball on the item selector circle.
+  // current ball on the item selector circle.
   const [currentBall, setCurrentBall] = useState(0);
 
   const [translateProp, setTranslateProp] = useState(0);
 
-  //Current pointer angle for the item selector circle.
+  // Current pointer angle for the item selector circle.
   const [pointerAngle, setPointerAngle] = useState(0);
   const [currentItemWidth, setCurrentItemWidth] = useState(0);
-  //carousel container translate value.
+  // carousel container translate value.
   const translatePropRef = useRef(0);
   const buttonSlideAnimationIntervalRef = useRef(null);
   const carouselItemsContainerRef = useRef(null);
-  //currentBall value for when the pointer slide animation is on.
+  // currentBall value for when the pointer slide animation is on.
   const currentBallBase = useRef(0);
-  //current item size setter useEffect. currentItemWidth is not defined on the inital render.
+  // current item size setter useEffect. currentItemWidth is not defined on the inital render.
   useEffect(() => {
     if (currentItemWidth) {
       setCurrentItemSize(
         currentItemSizeSetter({ translateProp, currentItemWidth })
       );
     }
-    //when the translateProp changes prev current and next item sizes are set accordingly.
-  }, [translateProp]);
+    // when the translateProp changes prev current and next item sizes are set accordingly.
+  }, [currentItemWidth, translateProp]);
   useEffect(() => {
     // after pointer is down on the carousel container, pointerMoveFunction is set.
     const pointerMoveFunction = (event) => {
@@ -124,7 +118,7 @@ const Carousel = () => {
         setPointerDownXCoordinate,
         setTranslateProp,
         event,
-        setCarouselItems,
+        setCarouselItemsCentralized,
         currentBallBase,
         defaultCarouselItems,
         setPointerAngle,
@@ -132,7 +126,7 @@ const Carousel = () => {
         angleBase,
       });
     };
-    //pointer move event is only set when the buttonSlideAnimation is not in progress.
+    // pointer move event is only set when the buttonSlideAnimation is not in progress.
     if (pointerSlideAnimationInProgress && !buttonSlideAnimationInProgress) {
       carouselItemsContainerRef.current.addEventListener(
         "pointermove",
@@ -145,7 +139,12 @@ const Carousel = () => {
         );
       };
     }
-  }, [pointerSlideAnimationInProgress, pointerDownXCoordinate]);
+  }, [
+    pointerSlideAnimationInProgress,
+    pointerDownXCoordinate,
+    buttonSlideAnimationInProgress,
+    currentItemWidth,
+  ]);
   //
 
   useEffect(() => {
@@ -185,7 +184,7 @@ const Carousel = () => {
     };
   }, []);
   const buttonPreviousNextFunction = ({ prev, next }) => {
-    //button slide animation does not happen if any animation is already in progress
+    // button slide animation does not happen if any animation is already in progress
     if (
       buttonSlideAnimationInProgress ||
       pointerSlideAnimationInProgress ||
@@ -216,17 +215,17 @@ const Carousel = () => {
       currentItemWidth &&
       !pointerSlideAnimationInProgress
     ) {
-      //during the button or item selector animation, when the translate prop overflows, corresponding function is triggered.
+      // during the button or item selector animation, when the translate prop overflows, corresponding function is triggered.
       translatePropOverflowFunction({
         currentBallBase,
         currentItemWidth,
-        setCarouselItems,
+        setCarouselItemsCentralized,
         setTranslateProp,
         translateProp,
         defaultCarouselItems,
       });
     }
-  }, [translateProp, pointerSlideAnimationInProgress]);
+  }, [translateProp, pointerSlideAnimationInProgress, currentItemWidth]);
   useEffect(() => {
     if (
       !pointerSlideAnimationInProgress &&
@@ -237,7 +236,7 @@ const Carousel = () => {
       animationFinishedFunction({
         translateProp,
         currentItemWidth,
-        setCarouselItems,
+        setCarouselItemsCentralized,
         currentBallBase,
         defaultCarouselItems,
         setPointerAngle,
@@ -250,17 +249,16 @@ const Carousel = () => {
     pointerSlideAnimationInProgress,
     buttonSlideAnimationInProgress,
     itemSelectorAnimationInProgress,
+    translateProp,
+    currentItemWidth,
   ]);
 
-  //Current Item Width Setter
-  const currentItemCallbackRef = useCallback(
-    (el) => {
-      if (el) {
-        setCurrentItemWidth(el.offsetWidth);
-      }
-    },
-    [windowWidth]
-  );
+  // Current Item Width Setter
+  const currentItemCallbackRef = useCallback((el) => {
+    if (el) {
+      setCurrentItemWidth(el.offsetWidth);
+    }
+  }, []);
   return (
     <CarouselContainer>
       <PreviousNext
@@ -270,7 +268,7 @@ const Carousel = () => {
         <PreviousNextSvg />
       </PreviousNext>
       <CarouselItemsComponent
-        carouselItems={carouselItems}
+        carouselItems={carouselItemsCentralized}
         ref={carouselItemsContainerRef}
         currentItemCallbackRef={currentItemCallbackRef}
         currentItemWidth={currentItemWidth}
@@ -278,14 +276,14 @@ const Carousel = () => {
         isMobile={isMobile}
         translateProp={translateProp}
       >
-        {carouselItems.map((item, index) => {
+        {carouselItemsCentralized.map((item, index) => {
           const { Item, id } = item;
 
           return (
             <Item
               key={id}
               index={index}
-              carouselItemsLength={carouselItems.length}
+              carouselItemsLength={carouselItemsCentralized.length}
               currentPrevNextItemSize={currentPrevNextItemSize}
               isMobile={isMobile}
               currentItemCallbackRef={currentItemCallbackRef}

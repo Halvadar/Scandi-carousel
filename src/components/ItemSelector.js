@@ -19,7 +19,7 @@ const ItemSelectorContainer = styled.div`
   touch-action: none;
 `;
 const BallCentralizer = styled.div.attrs((props) => ({
-  style: { width: props.widthProp + "px", height: props.heightProp + "px" },
+  style: { width: `${props.widthProp}px`, height: `${props.heightProp}px` },
 }))`
   position: absolute;
   left: 50%;
@@ -38,8 +38,8 @@ const Ball = styled.div.attrs((props) => ({
   border: 2px solid rgb(76, 118, 255);
   border-radius: 50%;
   position: absolute;
-  left: ${(props) => props.leftProp + "%"};
-  bottom: ${(props) => props.bottomProp + "%"};
+  left: ${(props) => `${props.leftProp}%`};
+  bottom: ${(props) => `${props.bottomProp}%`};
   transform: translate(-3px, 3px);
 `;
 const ItemSelector = ({
@@ -55,7 +55,6 @@ const ItemSelector = ({
   setCurrentBall,
   pointerAngle,
   setPointerAngle,
-  currentBallBase,
 }) => {
   //mounted ref is used so some of the useEffect hooks dont run on the initial render.
   const mounted = useRef(false);
@@ -185,7 +184,7 @@ const ItemSelector = ({
             key={item.id}
             leftProp={leftValue}
             bottomProp={bottomValue}
-          ></Ball>
+          />
         );
       }),
     [currentBall]
